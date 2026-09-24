@@ -8,7 +8,7 @@ export function createLoader({timeoutMs=15000,fetchImpl=globalThis.fetch}={}){
     const timer=setTimeout(()=>controller.abort(),timeoutMs);
     const pending=Promise.resolve().then(async()=>{
      try{
-      const response=await fetchImpl('./data/'+path+'?v=3',{signal:controller.signal});
+      const response=await fetchImpl('./data/'+path+'?v=4',{signal:controller.signal});
       if(!response.ok)throw new Error('内容暂时无法加载');
       return await response.json();
      }catch(error){cache.delete(path);throw error;}
