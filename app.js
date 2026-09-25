@@ -1,4 +1,5 @@
-import {createLoader} from './data-loader.js?v=4';
+import {createLoader} from './data-loader.js?v=5';
+import {prepareSearch,searchItems,snippet,highlightParts} from './search.js?v=5';
 clearTimeout(window.archiveBootTimer);
 const paths = {
   grid:'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z',
@@ -20,6 +21,9 @@ const app = document.querySelector('#app');
 const threadDialog=document.querySelector('#thread-dialog');
 const lightbox=document.querySelector('#lightbox');
 const about=document.querySelector('#about-dialog');
+const searchDialog=document.querySelector('#search-dialog');
+const searchTrigger=document.querySelector('.search-trigger');
+let searchVersion=0,searchPagePosition=null;
 const pageSize=20, commentPageSize=20;
 let data, lastHash='', lastMoment='', lightboxImages=[], lightboxIndex=0;
 const scrollPositions=new Map();
@@ -60,7 +64,7 @@ function source(item,depth=0){
   return `<section class="repost"><a class="source-author" ${linkAttrs(item)}>@${esc(item.user.name)}</a>${item.kind==='video'?video(item):item.kind==='article'?article(item):`<a class="source-hit" ${linkAttrs(item)}><p class="rich-text clamped">${rich(item.text)}</p></a>${imageGrid(item.images)}${source(item.source,depth+1)}`}<div class="source-caption"><span>${item.kind==='moment'?'原动态':item.kind==='article'?'文章':'视频'} · ${date(item.time)}${item.visibleForFans?' · 原站粉丝可见':''}</span><a ${linkAttrs(item)} class="external-corner">${item.kind==='moment'&&data.details[item.key]?'查看原动态 →':'在 AcFun 打开 ↗'}</a></div></section>`;
 }
 function card(item,full=false){
-  return `<article class="card ${full?'detail-card':''}"><div class="card-body"><header class="author-row">${avatar(item.user)}<div class="author-meta"><a class="author-name" href="https://www.acfun.cn/u/${esc(item.user.id)}" target="_blank" rel="noopener noreferrer">${esc(item.user.name)}</a>${item.user.id==='179922'?'<span class="up-mark">UP</span>':''}<a class="author-time" ${linkAttrs(item)}>${date(item.time,true)}${item.source?' · 转发动态':''}</a></div>${item.visibleForFans?'<span class="fans-badge">原站粉丝可见</span>':''}${item.case?`<span class="case-tag">${esc(item.case)}</span>`:''}</header>${item.kind==='moment'?textBlock(item,full)+imageGrid(item.images)+source(item.source):item.kind==='video'?video(item):article(item)}</div><footer class="card-footer"><div class="metrics"><a class="metric" ${item.kind==='moment'?`href="${esc(destination(item))}" data-scroll-comments="true"`:linkAttrs(item)} title="评论">${icon('message')} ${fmt(item.counts.commentCount)}</a><span class="metric" title="归档时点赞数">${icon('heart')} ${fmt(item.counts.likeCount)}</span><span class="metric" title="归档时香蕉数">${icon('banana')} ${fmt(item.counts.bananaCount)}</span><span class="metric" title="归档时转发数">${icon('share')} ${fmt(item.counts.shareCount)}</span></div><a class="detail-link" ${linkAttrs(item)}>${item.kind==='moment'?(full?'动态永久链接':'查看动态'):'在 AcFun 打开'} ${icon(item.kind==='moment'?'arrow':'external')}</a></footer></article>`;
+  return `<article class="card ${full?'detail-card':''}"><div class="card-body"><header class="author-row">${avatar(item.user)}<div class="author-meta"><a class="author-name" href="https://www.acfun.cn/u/${esc(item.user.id)}" target="_blank" rel="noopener noreferrer">${esc(item.user.name)}</a>${item.user.id==='179922'?'<span class="up-mark">UP</span>':''}<a class="author-time" ${linkAttrs(item)}>${date(item.time,item.timePrecision!=='day')}${item.source?' · 转发动态':''}</a></div>${item.visibleForFans?'<span class="fans-badge">原站粉丝可见</span>':''}${item.case?`<span class="case-tag">${esc(item.case)}</span>`:''}</header>${item.kind==='moment'?textBlock(item,full)+imageGrid(item.images)+source(item.source):item.kind==='video'?video(item):article(item)}</div><footer class="card-footer"><div class="metrics"><a class="metric" ${item.kind==='moment'?`href="${esc(destination(item))}" data-scroll-comments="true"`:linkAttrs(item)} title="评论">${icon('message')} ${fmt(item.counts.commentCount)}</a><span class="metric" title="归档时点赞数">${icon('heart')} ${fmt(item.counts.likeCount)}</span><span class="metric" title="归档时香蕉数">${icon('banana')} ${fmt(item.counts.bananaCount)}</span><span class="metric" title="归档时转发数">${icon('share')} ${fmt(item.counts.shareCount)}</span></div><a class="detail-link" ${linkAttrs(item)}>${item.kind==='moment'?(full?'动态永久链接':'查看动态'):'在 AcFun 打开'} ${icon(item.kind==='moment'?'arrow':'external')}</a></footer></article>`;
 }
 function sidebar(kind='all'){
  const p=data.profile;
@@ -69,7 +73,7 @@ function sidebar(kind='all'){
 }
 function pagination(page,total,key,basePath=state().path,position='bottom'){
  if(total<2&&position!=='top')return '';
- const make=n=>changed({[key]:n,...(key==='page'?{thread:null}:{} )},basePath);
+ const make=n=>changed({[key]:n,...(key==='page'?{thread:null}:key==='cp'?{tab:null,thread:null,rp:null}:{} )},basePath);
  return `<nav class="pagination ${position==='top'?'pagination-top':''}" aria-label="${position==='top'?'顶部':''}${key==='page'?'动态':key==='cp'?'评论':'回复'}分页">${page>1?`<a class="page-button" aria-label="上一页" href="${esc(make(page-1))}">${icon('back')}</a>`:`<button class="page-button" disabled aria-label="上一页">${icon('back')}</button>`}${position==='top'?`<span class="page-summary">${page} / ${total}</span>`:pageNumbers(page,total).map(n=>n===null?'<span class="page-ellipsis">…</span>':`<a class="page-button ${n===page?'current':''}" ${n===page?'aria-current="page"':''} href="${esc(make(n))}">${n}</a>`).join('')}${page<total?`<a class="page-button" aria-label="下一页" href="${esc(make(page+1))}">${icon('arrow')}</a>`:`<button class="page-button" disabled aria-label="下一页">${icon('arrow')}</button>`}<form data-page-key="${key}" data-max="${total}"><label>前往 <input aria-label="${position==='top'?'顶部':''}跳转${key==='page'?'动态':key==='cp'?'评论':'回复'}页码" name="page" type="number" min="1" max="${total}" value="${page}" required></label><button class="go" type="submit">页 →</button></form></nav>`;
 }
 function periodPicker(period){
@@ -89,6 +93,92 @@ function feedSelection(s){
  const page=Math.max(1,Math.min(total,Math.floor(Number(s.params.get('page')))||1));
  return {kind,period,ascending,count,total,page};
 }
+function searchSelection(s=state()){
+ const fallback=feedSelection(s);
+ const kind=s.params.get('sk')||fallback.kind;
+ const period=s.params.get('sm')||fallback.period;
+ return {query:(s.params.get('q')||'').trim().slice(0,200),kind:['all','moment','article','video'].includes(kind)?kind:'all',
+  period:period==='all'||data.catalog[period]?period:'all',ascending:(s.params.get('so')||(fallback.ascending?'asc':'desc'))==='asc',
+  page:Math.max(1,Math.floor(Number(s.params.get('sp')))||1)};
+}
+function searchResultLink(item,selection){
+ if(item.kind!=='moment')return `href="${esc(safeUrl(item.url))}" target="_blank" rel="noopener noreferrer"`;
+ const p=new URLSearchParams((state().id?backUrl():location.hash).split('?')[1]||'');
+ for(const key of ['thread','rp','cp','tab','from'])p.delete(key);
+ for(const [key,value] of Object.entries({q:selection.query,sk:selection.kind,sm:selection.period,so:selection.ascending?'asc':'desc',sp:selection.page}))p.set(key,String(value));
+ const href=route('/moment/'+item.key.split(':')[1],new URLSearchParams({from:route('/feed',p)}));
+ return `href="${esc(href)}"`;
+}
+function searchCard(item,selection){
+ const excerpt=highlightParts(snippet(item.text,selection.query),selection.query).map(p=>p.match?`<mark>${esc(p.text)}</mark>`:esc(p.text)).join('');
+ return `<article class="card search-result"><a ${searchResultLink(item,selection)}><div class="search-result-meta"><span>${label[item.kind]}</span><time>${date(item.time,item.timePrecision!=='day')}</time><span>${item.kind==='moment'?'查看动态 →':'在 AcFun 打开 ↗'}</span></div><p>${excerpt}</p></a></article>`;
+}
+function searchPeriodPicker(period){
+ const title=period==='all'?'全部时间':period.length===4?period+' 年':period.slice(0,4)+' 年 '+Number(period.slice(5))+' 月';
+ const option=(value,text,cls='')=>`<button type="button" class="date-option ${cls} ${period===value?'selected':''}" data-search-filter="sm" data-value="${value}" aria-pressed="${period===value}">${text}</button>`;
+ const years=[...new Set(data.months.map(m=>m.slice(0,4)))];
+ return `<details class="date-filter search-date"><summary aria-label="筛选搜索年份和月份">${title}${icon('down')}</summary><div class="date-options" role="group" aria-label="选择搜索年份和月份">${option('all','全部时间','date-all')}${years.map(y=>`<section class="date-year"><h3>${option(y,y+' 年 · 全年')}</h3><div class="month-grid">${data.months.filter(m=>m.startsWith(y)).sort().map(m=>option(m,Number(m.slice(5))+' 月')).join('')}</div></section>`).join('')}</div></details>`;
+}
+function searchPagination(page,total){
+ if(total<2)return '';
+ const button=(n,text,aria='')=>`<button class="page-button ${n===page?'current':''}" data-search-page="${n}" ${n<1||n>total?'disabled':''} ${aria?`aria-label="${aria}"`:''} ${n===page?'aria-current="page"':''}>${text}</button>`;
+ return `<nav class="pagination" aria-label="搜索结果分页">${button(page-1,icon('back'),'上一页')}${pageNumbers(page,total).map(n=>n===null?'<span class="page-ellipsis">…</span>':button(n,n)).join('')}${button(page+1,icon('arrow'),'下一页')}<form data-search-jump data-max="${total}"><label>前往 <input name="page" type="number" min="1" max="${total}" value="${page}" aria-label="跳转搜索结果页码" required></label><button class="go" type="submit">页 →</button></form></nav>`;
+}
+function updateSearch(values){
+ const s=searchSelection();
+ const query=searchDialog.querySelector('input[name="query"]')?.value.trim().slice(0,200)??s.query;
+ const href=changed({q:query||null,sk:s.kind,sm:s.period,so:s.ascending?'asc':'desc',sp:1,...values});
+ if(href===location.hash)void renderSearch();else location.hash=href;
+}
+function showSearch(position=window.scrollY){
+ if(searchDialog.open)return;
+ searchPagePosition=position;
+ document.body.style.setProperty('--search-scroll-top',`-${position}px`);
+ document.body.classList.add('search-open');
+ searchDialog.showModal();
+ searchDialog.querySelector('input[name="query"]')?.focus({preventScroll:true});
+}
+function hideSearch(){
+ searchVersion++;
+ searchDialog.close();
+ document.body.classList.remove('search-open');
+ document.body.style.removeProperty('--search-scroll-top');
+ if(searchPagePosition!==null)window.scrollTo(0,searchPagePosition);
+ searchPagePosition=null;
+}
+function openSearch(){
+ if(!data)return;
+ void renderSearch();
+ showSearch();
+}
+function closeSearch(){
+ hideSearch();
+ const href=changed({q:null,sk:null,sm:null,so:null,sp:null});
+ if(href!==location.hash){
+  // 关闭不改动正文、分页和滚动位置，也不留下一个需要退回的搜索步骤。
+  history.replaceState(null,'',href);scrollPositions.set(href,window.scrollY);void render({force:true});
+ }
+ searchTrigger.focus({preventScroll:true});
+}
+async function renderSearch(){
+ const version=++searchVersion,selection=searchSelection();
+ const focus=searchDialog.contains(document.activeElement)?document.activeElement?.id:'';
+ searchDialog.innerHTML=`<header class="search-header"><h2 id="search-title">搜索动态</h2><button class="dialog-close" data-action="close-search" aria-label="关闭搜索">×</button></header><div class="search-tools"><form class="search-form" role="search" data-search><label class="sr-only" for="archive-search">搜索动态正文、标题及预览</label><input id="archive-search" name="query" type="search" maxlength="200" value="${esc(selection.query)}" placeholder="搜索动态全文、文章 / 视频标题与预览" autocomplete="off"><button type="submit">搜索</button></form><div class="search-filters"><div class="search-kinds" role="group" aria-label="搜索内容类型">${['all','moment','article','video'].map(kind=>`<button type="button" data-search-filter="sk" data-value="${kind}" aria-pressed="${selection.kind===kind}" class="${selection.kind===kind?'selected':''}">${kind==='all'?'全部':label[kind]}</button>`).join('')}</div><div class="search-options">${searchPeriodPicker(selection.period)}<button class="sort-toggle" data-search-filter="so" data-value="${selection.ascending?'desc':'asc'}" title="切换搜索结果时间排序">${selection.ascending?'最早优先':'最新优先'}<span aria-hidden="true">${selection.ascending?'↑':'↓'}</span></button></div></div></div><div class="search-scroll"><p class="search-status" role="status" aria-live="polite">${selection.query?'正在搜索…':''}</p><div class="search-results">${selection.query?'':'<div class="search-empty">输入关键词<small>搜索正文、标题与预览，不包含评论。</small></div>'}</div></div>`;
+ if(focus==='archive-search')searchDialog.querySelector('#archive-search').focus({preventScroll:true});
+ if(!selection.query)return;
+ try{
+  if(!searchIndex){const index=await getJSON(data.search.path);searchIndex=prepareSearch(index.items);}
+  if(version!==searchVersion)return;
+  const hits=searchItems(searchIndex,selection),total=Math.max(1,Math.ceil(hits.length/pageSize));
+  selection.page=Math.min(selection.page,total);
+  searchDialog.querySelector('.search-status').textContent=`找到 ${hits.length} 条结果`;
+  searchDialog.querySelector('.search-results').innerHTML=hits.length?hits.slice((selection.page-1)*pageSize,selection.page*pageSize).map(item=>searchCard(item,selection)).join('')+searchPagination(selection.page,total):'<div class="search-empty">没有找到匹配内容<small>试试其他关键词，或调整类型和时间筛选。</small><button class="text-link" data-action="reset-search-filters">重置筛选</button></div>';
+ }catch(error){
+  if(version!==searchVersion)return;
+  searchDialog.querySelector('.search-status').textContent='搜索暂时无法加载';
+  searchDialog.querySelector('.search-results').innerHTML='<div class="search-empty">请检查网络后重试。<button class="text-link" data-action="retry-search">重新搜索</button></div>';
+ }
+}
 function renderFeed(s,view){
  const {kind,period,ascending,count,total,page,items}=view;
  const hero=mediaUrl(data.hero);
@@ -105,8 +195,8 @@ function renderDetail(s){
  const detail=data.details['moment:'+s.id];
  if(!detail||typeof detail==='string'){app.innerHTML=`<div class="shell"><a class="text-link" href="#/feed">← 返回列表</a><div class="empty">尚未保存这条动态。</div></div>`;return;}
  document.title=textOnly(detail.text).slice(0,25)+' · 1001fans';
- const {tab,page,total}=detail.view;
- app.innerHTML=`<div class="shell detail-layout"><div class="backbar"><a href="${esc(backUrl())}">${icon('back')} 返回动态列表</a><a href="${esc(safeUrl(detail.url))}" target="_blank" rel="noopener noreferrer">原站动态 ${icon('external')}</a></div><div class="workspace">${sidebar('moment')}<section class="feed-column">${card(detail,true)}<section class="comment-section" id="comments"><div class="comment-heading"><h2>评论区<small>原站 ${fmt(detail.counts.commentCount)}</small></h2>${icon('message')}</div><nav class="comment-tabs" aria-label="评论排序"><a class="${tab==='all'?'active':''}" href="${esc(changed({tab:'all',cp:1,thread:null,rp:null}))}">全部评论 ${fmt(detail.archivedRoots)}</a><a class="${tab==='hot'?'active':''}" href="${esc(changed({tab:'hot',cp:1,thread:null,rp:null}))}">热门评论 ${fmt(detail.hotCount)}</a></nav>${detail.comments.map(c=>comment(c,detail)).join('')||`<div class="empty">${icon('message')}<p>${tab==='hot'?'尚未保存热门评论。':detail.commentsPending?'这条动态的评论尚未保存。':'尚未保存可展示的评论。'}</p></div>`}${pagination(page,total,'cp')}</section><p class="page-footnote">${date(detail.time)} 发布 · ${date(new Date(data.generatedAt).getTime())} 保存</p></section></div></div>`;
+ const {page,total}=detail.view;
+ app.innerHTML=`<div class="shell detail-layout"><div class="backbar"><a href="${esc(backUrl())}">${icon('back')} 返回动态列表</a><a href="${esc(safeUrl(detail.url))}" target="_blank" rel="noopener noreferrer">原站动态 ${icon('external')}</a></div><div class="workspace">${sidebar('moment')}<section class="feed-column">${card(detail,true)}<section class="comment-section" id="comments"><div class="comment-heading"><h2>评论区<small>原站 ${fmt(detail.counts.commentCount)}</small></h2>${icon('message')}</div>${detail.comments.map(c=>comment(c,detail)).join('')||`<div class="empty">${icon('message')}<p>${detail.commentsPending?'这条动态的评论尚未保存。':'尚未保存可展示的评论。'}</p></div>`}${pagination(page,total,'cp')}</section><p class="page-footnote">${date(detail.time)} 发布 · ${date(new Date(data.generatedAt).getTime())} 保存</p></section></div></div>`;
 }
 function renderThread(s){
  const detail=data.details['moment:'+s.id];const view=detail?.threadView;
@@ -119,6 +209,7 @@ function renderThread(s){
 function closeThread(){location.hash=changed({thread:null,rp:null});}
 let renderVersion=0,renderFailed=false;
 const loader=createLoader();
+let searchIndex;
 const getJSON=path=>loader.get(path);
 async function getPack(path){
  const pack=await getJSON(path);
@@ -131,12 +222,17 @@ function pageNumbers(page,total){
  const result=[];values.forEach((n,i)=>{if(i&&n-values[i-1]>1)result.push(null);result.push(n);});return result;
 }
 function selectedPage(params,key,length){return Math.max(1,Math.min(Math.max(1,length),Math.floor(Number(params.get(key)))||1));}
-async function render(){
- const version=++renderVersion;const s=state();const hash=location.hash;
+async function render({force=false}={}){
+ const version=++renderVersion;const s=state();
+ // 兼容旧热评链接：保留楼中楼定位，统一从评论第一页进入。
+ if(s.id&&s.params.has('tab')){if(s.params.get('tab')==='hot')s.params.set('cp','1');s.params.delete('tab');history.replaceState(null,'',route(s.path,s.params));}
+ const hash=location.hash;
+ const withoutSearch=value=>{const [path,query='']=(value||'#/feed').split('?');const params=new URLSearchParams(query);for(const key of ['q','sk','sm','so','sp'])params.delete(key);return path+'?'+params.toString();};
+ const onlySearch=!force&&!renderFailed&&data&&withoutSearch(lastHash)===withoutSearch(hash);
  const sameMoment=s.id&&lastMoment===s.id;
  const oldState=lastHash?new URLSearchParams(lastHash.split('?')[1]||''):new URLSearchParams();
- const onlyThread=!renderFailed&&sameMoment&&oldState.get('cp')===s.params.get('cp')&&oldState.get('tab')===s.params.get('tab');
- if(lastHash)scrollPositions.set(lastHash,window.scrollY);
+ const onlyThread=!force&&!renderFailed&&sameMoment&&oldState.get('cp')===s.params.get('cp')&&oldState.get('tab')===s.params.get('tab');
+ if(lastHash)scrollPositions.set(lastHash,searchPagePosition??window.scrollY);
  app.setAttribute('aria-busy','true');
  try{
   if(!data){
@@ -154,19 +250,24 @@ async function render(){
   }
   if(s.id&&data.detailFiles['moment:'+s.id]){
    const base=await getPack(data.detailFiles['moment:'+s.id]);
-   const tab=s.params.get('tab')==='hot'?'hot':'all';const pages=tab==='hot'?base.hotPages:base.commentPages;
+   const pages=base.commentPages;
    const page=selectedPage(s.params,'cp',pages.length);
    const comments=pages.length?await getPack(pages[page-1]):[];
-   const detail={...base,comments,view:{tab,page,total:Math.max(1,pages.length)},threadView:null};
+   const detail={...base,comments,view:{page,total:Math.max(1,pages.length)},threadView:null};
    const info=base.threads[s.params.get('thread')];
    if(info){const rp=selectedPage(s.params,'rp',info.pages.length);detail.threadView={info,root:info.root,replies:info.pages.length?await getPack(info.pages[rp-1]):[],page:rp,total:Math.max(1,info.pages.length)};}
    if(version!==renderVersion)return;
    data.details['moment:'+s.id]=detail;
   }
   if(version!==renderVersion)return;
-  if(!onlyThread){if(s.id)renderDetail(s);else renderFeed(s,feedView);}
+  if(!onlyThread&&!onlySearch){if(s.id)renderDetail(s);else renderFeed(s,feedView);}
   renderThread(s);
-  if(!onlyThread){const saved=scrollPositions.get(hash);requestAnimationFrame(()=>{if(version!==renderVersion)return;if(saved!==undefined)window.scrollTo(0,saved);else if(sameMoment)document.querySelector('#comments')?.scrollIntoView();else window.scrollTo(0,0);if(sessionStorage.getItem('jumpComments')==='yes'){sessionStorage.removeItem('jumpComments');document.querySelector('#comments')?.scrollIntoView();}});}
+  searchTrigger.disabled=false;
+  if(s.params.has('q')||searchDialog.open){
+   void renderSearch();
+   if(s.params.has('q')&&!searchDialog.open)showSearch(scrollPositions.get(hash)??(onlySearch?window.scrollY:0));
+  }
+  if(!onlyThread&&!onlySearch){const saved=scrollPositions.get(hash);requestAnimationFrame(()=>{if(version!==renderVersion||searchDialog.open)return;if(saved!==undefined)window.scrollTo(0,saved);else if(sameMoment)document.querySelector('#comments')?.scrollIntoView();else window.scrollTo(0,0);if(sessionStorage.getItem('jumpComments')==='yes'){sessionStorage.removeItem('jumpComments');document.querySelector('#comments')?.scrollIntoView();}});}
   lastHash=hash;lastMoment=s.id||'';renderFailed=false;
  }catch(err){if(version===renderVersion){renderFailed=true;if(threadDialog.open)threadDialog.close();app.innerHTML='<div class="shell empty">加载超时或网络暂不可用。<button class="text-link" data-action="retry">重新加载</button> · <a href="#/feed">返回列表</a></div>';}}
  finally{if(version===renderVersion)app.removeAttribute('aria-busy');}
@@ -174,10 +275,17 @@ async function render(){
 function renderLightbox(){const mid=lightboxImages[lightboxIndex];lightbox.innerHTML=`<span class="image-counter">${lightboxIndex+1} / ${lightboxImages.length}</span><button class="dialog-close" data-action="close-image" aria-label="关闭图片">×</button><img class="lightbox-image" src="${esc(mediaUrl(mid))}" alt="放大查看第 ${lightboxIndex+1} 张图片">${lightboxImages.length>1?`<button class="lightbox-nav prev" data-action="prev-image" aria-label="上一张图片">${icon('back')}</button><button class="lightbox-nav next" data-action="next-image" aria-label="下一张图片">${icon('arrow')}</button>`:''}<span class="lightbox-caption">${lightboxImages.length>1?'← → 切换图片 · ':''}Esc 关闭</span>`;}
 function shiftImage(step){lightboxIndex=(lightboxIndex+step+lightboxImages.length)%lightboxImages.length;renderLightbox();}
 document.addEventListener('click',e=>{
- if(!e.target.closest('.date-filter'))document.querySelector('.date-filter[open]')?.removeAttribute('open');
+ if(!e.target.closest('.date-filter'))document.querySelectorAll('.date-filter[open]').forEach(p=>p.removeAttribute('open'));
+ const searchFilter=e.target.closest('[data-search-filter]');if(searchFilter){updateSearch({[searchFilter.dataset.searchFilter]:searchFilter.dataset.value});return;}
+ const searchPage=e.target.closest('[data-search-page]');if(searchPage){updateSearch({sp:Number(searchPage.dataset.searchPage)});return;}
+ if(e.target.closest('#search-dialog .search-result a')?.getAttribute('href')?.startsWith('#')){hideSearch();}
  const commentsLink=e.target.closest('[data-scroll-comments]');if(commentsLink){sessionStorage.setItem('jumpComments','yes');if(commentsLink.getAttribute('href')===location.hash){e.preventDefault();sessionStorage.removeItem('jumpComments');document.querySelector('#comments')?.scrollIntoView();}}
  const button=e.target.closest('[data-action]');if(!button)return;
  switch(button.dataset.action){
+  case 'open-search':openSearch();break;
+  case 'close-search':closeSearch();break;
+  case 'retry-search':void renderSearch();break;
+  case 'reset-search-filters':updateSearch({sk:'all',sm:'all'});break;
   case 'retry':render();break;
   case 'open-moment':if(!e.target.closest('a')){const href=button.dataset.href;if(href.startsWith('#'))location.hash=href;else window.open(href,'_blank','noopener,noreferrer');}break;
   case 'expand':{const p=button.previousElementSibling;const expanded=p.classList.toggle('clamped');button.textContent=expanded?'展开全文':'收起';break;}
@@ -190,8 +298,11 @@ document.addEventListener('click',e=>{
   case 'close-about':about.close();break;
  }
 });
-document.addEventListener('submit',e=>{const form=e.target.closest('[data-page-key]');if(!form)return;e.preventDefault();const page=Math.max(1,Math.min(Number(form.dataset.max),Math.floor(Number(new FormData(form).get('page')))||1));location.hash=changed({[form.dataset.pageKey]:page});});
+document.addEventListener('submit',e=>{const search=e.target.closest('[data-search]');if(search){e.preventDefault();updateSearch({});return;}const jump=e.target.closest('[data-search-jump]');if(jump){e.preventDefault();updateSearch({sp:Math.max(1,Math.min(Number(jump.dataset.max),Math.floor(Number(new FormData(jump).get('page')))||1))});return;}const form=e.target.closest('[data-page-key]');if(!form)return;e.preventDefault();const page=Math.max(1,Math.min(Number(form.dataset.max),Math.floor(Number(new FormData(form).get('page')))||1));location.hash=changed({[form.dataset.pageKey]:page,...(form.dataset.pageKey==='cp'?{tab:null,thread:null,rp:null}:{})});});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){const picker=document.querySelector('.date-filter[open]');if(picker){picker.removeAttribute('open');picker.querySelector('summary').focus();}}});
+searchDialog.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeSearch();}},true);
+searchDialog.addEventListener('cancel',e=>{e.preventDefault();closeSearch();});
+searchDialog.addEventListener('click',e=>{if(e.target===searchDialog){const r=searchDialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)closeSearch();}});
 threadDialog.addEventListener('cancel',e=>{e.preventDefault();closeThread();});
 threadDialog.addEventListener('click',e=>{if(e.target===threadDialog){const r=threadDialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right)closeThread();}});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.dataset.action==='open-moment'){location.hash=e.target.dataset.href;}if(lightbox.open&&['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();shiftImage(e.key==='ArrowLeft'?-1:1);}});

@@ -5,12 +5,13 @@
   <meta name="referrer" content="no-referrer"><meta name="theme-color" content="#fd4c5c">
   <meta name="description" content="1001Project 的历史动态档案，按页浏览动态、图片与评论互动。"><title>1001fans · 1001Project 动态档案</title>
   <link rel="icon" href="https://tx-free-imgs.acfun.cn/newUpload/179922_d1f3e455380346a0bdd3ebec5b12996f.png?imageMogr2/auto-orient/format/webp/quality/80!/ignore-error/1">
-  <link rel="stylesheet" href="./style.css?v=4"><script type="module" src="./app.js?v=4"></script>
+  <link rel="stylesheet" href="./style.css?v=7"><script type="module" src="./app.js?v=7"></script>
 </head>
 <body>
-  <header class="topbar"><div class="topbar-inner"><a class="brand" href="#/feed"><span class="brand-copy">1001FANS</span></a><nav aria-label="主导航"><a href="#/feed" class="nav-current">动态档案</a><button data-action="about">关于归档</button></nav><span class="archive-pill">历史动态档案</span></div></header>
+  <header class="topbar"><div class="topbar-inner"><a class="brand" href="#/feed"><span class="brand-copy">1001FANS</span></a><nav aria-label="主导航"><a href="#/feed" class="nav-current">动态档案</a><button data-action="about">关于归档</button></nav><div class="topbar-actions"><button class="search-trigger" data-action="open-search" aria-label="搜索动态" aria-haspopup="dialog" aria-controls="search-dialog" title="搜索动态" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button></div></div></header>
   <main id="app"><div class="loading">正在打开动态档案…</div></main>
   <script>window.archiveBootTimer=setTimeout(function(){var app=document.getElementById('app');if(app.textContent.includes('正在打开动态档案')){app.innerHTML='<div class="loading">加载较慢，请检查网络后重试。<button class="text-link" onclick="location.reload()">重新加载</button></div>';}},15000);</script>
+  <dialog id="search-dialog" aria-labelledby="search-title"></dialog>
   <dialog id="thread-dialog" aria-labelledby="thread-title"></dialog>
   <dialog id="lightbox" aria-label="图片查看器"></dialog>
   <dialog id="about-dialog" aria-labelledby="about-title"><button class="dialog-close" data-action="close-about" aria-label="关闭">×</button><span class="eyebrow">ABOUT THE ARCHIVE</span><h2 id="about-title">把动态留在时间里</h2><p>这里保存了 1001Project 的历史动态，内容来自已保存的 AcFun 动态数据，与 AcFun 官方无关。</p><p>动态可在本站阅读；文章和视频会跳转 AcFun。评论、头像和互动量来自归档快照，不会实时更新。</p><p>包含原站粉丝可见动态，并标注其原始可见范围。这里展示当前已保存的评论与回复，缺失内容会注明。图片支持点击查看；部分旧表情暂以文字显示。</p><button class="primary-button" data-action="close-about">开始浏览</button></dialog>
