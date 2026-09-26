@@ -302,7 +302,20 @@ document.addEventListener('submit',e=>{const search=e.target.closest('[data-sear
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){const picker=document.querySelector('.date-filter[open]');if(picker){picker.removeAttribute('open');picker.querySelector('summary').focus();}}});
 searchDialog.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeSearch();}},true);
 searchDialog.addEventListener('cancel',e=>{e.preventDefault();closeSearch();});
-searchDialog.addEventListener('click',e=>{if(e.target===searchDialog){const r=searchDialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)closeSearch();}});
+// 按下和松开都在遮罩上才关闭，避免从输入框向外拖选文字时误触。
+let searchBackdropPress=false;
+function onSearchBackdrop(e){
+ const r=searchDialog.getBoundingClientRect();
+ return e.target===searchDialog&&(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom);
+}
+searchDialog.addEventListener('pointerdown',e=>{searchBackdropPress=e.isPrimary&&e.button===0&&onSearchBackdrop(e);});
+searchDialog.addEventListener('pointercancel',()=>{searchBackdropPress=false;});
+searchDialog.addEventListener('close',()=>{searchBackdropPress=false;});
+searchDialog.addEventListener('click',e=>{
+ const dismiss=searchBackdropPress&&onSearchBackdrop(e);
+ searchBackdropPress=false;
+ if(dismiss)closeSearch();
+});
 threadDialog.addEventListener('cancel',e=>{e.preventDefault();closeThread();});
 threadDialog.addEventListener('click',e=>{if(e.target===threadDialog){const r=threadDialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right)closeThread();}});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.dataset.action==='open-moment'){location.hash=e.target.dataset.href;}if(lightbox.open&&['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();shiftImage(e.key==='ArrowLeft'?-1:1);}});
