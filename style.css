@@ -56,3 +56,5 @@ body.search-open{position:fixed;top:var(--search-scroll-top);left:0;right:0;widt
 .hot-picture{display:inline;padding:0;color:var(--blue);font:inherit;text-decoration:underline;text-underline-offset:2px}
 .hot-preview a{color:var(--blue)}
 @media(max-width:480px){.hot-preview{font-size:13px}}
+
+.profile-bio{white-space:pre-line;overflow-wrap:anywhere}
