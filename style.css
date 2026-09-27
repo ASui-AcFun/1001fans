@@ -45,3 +45,14 @@
 @media(max-width:600px){.topbar-inner{gap:16px}.topbar nav{gap:16px}.topbar-actions{gap:0}#search-dialog{width:calc(100vw - 20px);height:calc(100dvh - 90px);max-height:calc(100dvh - 90px);margin:70px auto 20px;border-radius:14px}.search-header{padding:16px 16px 12px}.search-tools{padding:0 16px 12px}.search-scroll{padding:0 16px 16px}.search-options{justify-content:space-between;width:100%}.search-kinds{width:100%;justify-content:space-between}.search-kinds button{flex:1}.search-date .date-options{left:0;right:auto;max-height:min(300px,40dvh)}.search-empty{padding:40px 5px}}
 
 body.search-open{position:fixed;top:var(--search-scroll-top);left:0;right:0;width:100%;overflow:hidden}
+
+/* 列表热评处于分隔线与互动行之间，正文去换行并限制两行。 */
+.video-description{margin-bottom:14px;white-space:pre-line}
+.card-footer{display:block}
+.card-actions{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.hot-preview{margin:0 0 14px;color:#777;font-size:14px;line-height:1.75}
+.hot-preview p{margin:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;white-space:normal}
+.hot-author{color:#7e7785}
+.hot-picture{display:inline;padding:0;color:var(--blue);font:inherit;text-decoration:underline;text-underline-offset:2px}
+.hot-preview a{color:var(--blue)}
+@media(max-width:480px){.hot-preview{font-size:13px}}
