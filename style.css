@@ -59,4 +59,6 @@ body.search-open{position:fixed;top:var(--search-scroll-top);left:0;right:0;widt
 
 .profile-bio{white-space:pre-line;overflow-wrap:anywhere}
 /* 完整简介可能超过窗口高度，侧栏可独立滚动以保持分类入口可达。 */
-@media(min-width:801px){.sidebar{max-height:calc(100dvh - 122px);overflow-y:auto;scrollbar-width:thin}}
+@media(min-width:801px){.sidebar{max-height:calc(100dvh - 122px);overflow-y:auto;scrollbar-width:none}}
+
+.sidebar::-webkit-scrollbar{display:none}
