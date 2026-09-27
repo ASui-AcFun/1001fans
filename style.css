@@ -50,10 +50,11 @@ body.search-open{position:fixed;top:var(--search-scroll-top);left:0;right:0;widt
 .video-description{margin-bottom:14px;white-space:pre-line}
 .card-footer{display:block}
 .card-actions{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.hot-preview{margin:0 0 14px;color:#000;font-size:14px;line-height:1.75}
+.hot-preview{margin:0 0 14px;padding-left:10px;border-left:3px solid #d8d3df;color:#000;font-size:14px;line-height:1.75}
 .hot-preview p{margin:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;white-space:normal}
 .hot-author{color:#7e7785}
-.hot-picture{display:inline;padding:0;color:var(--blue);font:inherit;text-decoration:underline;text-underline-offset:2px}
+.hot-picture{display:inline;padding:0;color:var(--blue);font:inherit;white-space:nowrap;text-decoration:underline;text-underline-offset:2px}
+.hot-picture svg{width:13px;height:13px;margin-right:3px;vertical-align:-2px}
 .hot-preview a{color:var(--blue)}
 @media(max-width:480px){.hot-preview{font-size:13px}}
 

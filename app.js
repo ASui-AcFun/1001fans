@@ -6,6 +6,7 @@ const paths = {
   message:'M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2v-10A8.5 8.5 0 0 1 10.5 3h2a8.5 8.5 0 0 1 8.5 8.5Z',
   article:'M5 3h14v18H5z M8 7h8 M8 11h8 M8 15h5',
   video:'M3 5h18v14H3z M10 9l5 3-5 3Z',
+  image:'M4 4h16v16H4z M4 16l5-5 4 4 3-3 4 4 M8 8h.01',
   heart:'M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z',
   banana:'M6 3c1 8 7 12 15 10-2 6-9 8-14 4S2 8 6 3Z M7 5l2-3',
   arrow:'m9 5 7 7-7 7', back:'m15 5-7 7 7 7', external:'M14 3h7v7 M21 3 10 14 M10 3H3v18h18v-7',
@@ -65,7 +66,7 @@ function source(item,depth=0){
 }
 function hotPreview(comment){
   if(!comment)return '';
-  const pictures=(comment.images||[]).map((id,i)=>`<button class="hot-picture" data-action="image" data-images="${esc(comment.images.join(','))}" data-index="${i}" aria-label="查看热评第 ${i+1} 张图片">图片</button>`).join(' ');
+  const pictures=(comment.images||[]).map((id,i)=>`<button class="hot-picture" data-action="image" data-images="${esc(comment.images.join(','))}" data-index="${i}" aria-label="查看热评第 ${i+1} 张图片">${icon('image')}图片</button>`).join(' ');
   const text=String(comment.text||'').replace(/[\r\n]+/g,' ');
   return `<div class="hot-preview"><p><span class="hot-author">${esc(comment.user.name)}：</span>${rich(text)}${pictures?' '+pictures:''}</p></div>`;
 }
